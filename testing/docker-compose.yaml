@@ -1,0 +1,69 @@
+version: "3"
+services:
+  zookeeper:
+    image: bitnami/zookeeper:latest
+    environment:
+      ALLOW_ANONYMOUS_LOGIN: "yes"
+    
+  kafka:
+    image: bitnami/kafka:latest
+    depends_on: 
+      - zookeeper
+    environment:
+      ALLOW_PLAINTEXT_LISTENER: "yes" 
+      KAFKA_ADVERTISED_LISTENERS: INSIDE://:9092,OUTSIDE://:9094
+      KAFKA_LISTENERS: INSIDE://:9092,OUTSIDE://:9094
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: INSIDE:PLAINTEXT,OUTSIDE:PLAINTEXT
+      KAFKA_INTER_BROKER_LISTENER_NAME: INSIDE
+      KAFKA_CREATE_TOPICS: "input:2:1, output:2:1"
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+    ports:
+      - 9092:9092
+      - 9094:9094
+  kafka-ui:
+    image: provectuslabs/kafka-ui
+    container_name: kafka-ui
+    ports:
+      - "8080:8080"
+    restart: always
+    environment:
+      - KAFKA_CLUSTERS_0_NAME=kafka
+      - KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS=kafka:9092
+      - KAFKA_CLUSTERS_0_ZOOKEEPER=zookeeper:2181      
+  sql:
+    image: kafka-ratelimit
+    build: ./images/client
+    command: "tail -f /dev/null"
+    depends_on:
+      - jobmanager
+      - kafka
+    links:
+      - kafka:kafka
+    environment:
+      FLINK_JOBMANAGER_HOST: "jobmanager"
+  jobmanager:
+    image: flink:1.14.2-scala_2.12
+    hostname: jobmanager
+    expose:
+      - "6123"
+    ports:
+      - "8081:8081"
+    volumes:
+    - ${PWD}/log4j.properties:/opt/flink/conf/log4j.properties      
+    command: jobmanager
+    environment:
+      JOB_MANAGER_RPC_ADDRESS: "jobmanager"
+  taskmanager:
+    image: flink:1.14.2-scala_2.12
+    expose:
+      - "6121"
+      - "6122"
+    volumes:
+    - ${PWD}/log4j.properties:/opt/flink/conf/log4j.properties      
+    depends_on:
+      - jobmanager
+    command: taskmanager
+    links:
+      - jobmanager:jobmanager
+    environment:
+      JOB_MANAGER_RPC_ADDRESS: "jobmanager"
