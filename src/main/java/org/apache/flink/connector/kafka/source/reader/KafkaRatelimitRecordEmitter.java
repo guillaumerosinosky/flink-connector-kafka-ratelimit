@@ -8,10 +8,11 @@ import org.apache.flink.shaded.guava30.com.google.common.util.concurrent.RateLim
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class KafkaRatelimitRecordEmitter<T> implements RecordEmitter<Tuple3<T, Long, Long>, T, KafkaPartitionSplitState>{
+public class KafkaRatelimitRecordEmitter<T>
+        implements RecordEmitter<Tuple3<T, Long, Long>, T, KafkaPartitionSplitState> {
     protected static final Logger LOG = LoggerFactory.getLogger(KafkaRatelimitRecordEmitter.class);
     private transient RateLimiter rateLimiter;
-    
+
     public KafkaRatelimitRecordEmitter(double rateLimit) {
         LOG.debug("constructor record emitter");
         this.rateLimiter = RateLimiter.create(rateLimit);
@@ -23,7 +24,7 @@ public class KafkaRatelimitRecordEmitter<T> implements RecordEmitter<Tuple3<T, L
             SourceOutput<T> output,
             KafkaPartitionSplitState splitState)
             throws Exception {
-        
+
         this.rateLimiter.acquire();
         output.collect(element.f0, element.f2);
         splitState.setCurrentOffset(element.f1 + 1);
