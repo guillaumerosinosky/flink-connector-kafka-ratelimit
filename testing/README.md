@@ -46,12 +46,21 @@ CREATE TABLE test (
     WATERMARK FOR `record_time` AS `record_time` - INTERVAL '1' SECOND
 ) WITH (
     'connector' = 'kafka-ratelimit',
-    'topic' = 'test',
+    'topic' = 'test;control',
     'scan.startup.mode' = 'earliest-offset',
     'properties.bootstrap.servers' = 'kafka:9092',
+    'properties.max.partition.fetch.bytes' = '100000',
     'value.format' = 'json',
-    'rate.limit' = '5'
+    'rate.limit' = '100'
 );
 SELECT COUNT(*) FROM test; 
 ```
 The result (count of events) should increase on average by the given rate limit (here 5).
+In order to change the rate limit, please send a message to the `control` topic, in this form:
+```json
+{
+    "rate": 100,
+    "timestamp": 1676974129000
+```
+The `timestamp` correspond to the time of application of the new rate limit. This field is facultative.
+Caution: it can take time for the consumer to "switch" to the control topic. It should be possible to tune this by changing the buffer size (depending also on the messages size). By default it seems the switch happens every 1 Mb (Will document this part later).

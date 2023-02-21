@@ -39,6 +39,7 @@ import org.apache.flink.connector.kafka.source.enumerator.initializer.OffsetsIni
 import org.apache.flink.connector.kafka.source.enumerator.subscriber.KafkaSubscriber;
 import org.apache.flink.connector.kafka.source.metrics.KafkaSourceReaderMetrics;
 import org.apache.flink.connector.kafka.source.reader.KafkaPartitionSplitReader;
+import org.apache.flink.connector.kafka.source.reader.KafkaRatelimitPartitionSplitReader;
 import org.apache.flink.connector.kafka.source.reader.KafkaRatelimitRecordEmitter;
 import org.apache.flink.connector.kafka.source.reader.KafkaRecordEmitter;
 import org.apache.flink.connector.kafka.source.reader.KafkaSourceReader;
@@ -163,7 +164,7 @@ public class KafkaRatelimitSource<OUT> extends KafkaSource<OUT> {
         final KafkaSourceReaderMetrics kafkaSourceReaderMetrics = new KafkaSourceReaderMetrics(
                 readerContext.metricGroup());
 
-        Supplier<KafkaPartitionSplitReader<OUT>> splitReaderSupplier = () -> new KafkaPartitionSplitReader<>(
+        Supplier<KafkaRatelimitPartitionSplitReader<OUT>> splitReaderSupplier = () -> new KafkaRatelimitPartitionSplitReader<>(
                 props,
                 deserializationSchema,
                 readerContext,
